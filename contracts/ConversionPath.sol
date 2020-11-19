@@ -29,7 +29,8 @@ contract ConversionPath is WhitelistAdminRole {
   // rate must have been updated before the last... 10min
   uint256 public maxTimestampDeltaAcceptable = 600;
 
-  constructor() public {}
+  // declare a new aggregator
+  event UpdateAggregator(address _input, address _output, address _aggregator);
 
   /**
     * @notice Update an aggregator
@@ -42,6 +43,7 @@ contract ConversionPath is WhitelistAdminRole {
     onlyWhitelistAdmin  
   {
     allAggregators[_input][_output] = _aggregator;
+    emit UpdateAggregator(_input, _output, _aggregator);
   }
 
   /**
@@ -60,6 +62,7 @@ contract ConversionPath is WhitelistAdminRole {
     // For every conversions of the path
     for (uint i; i < _inputs.length; i++) {
       allAggregators[_inputs[i]][_outputs[i]] = _aggregators[i];
+      emit UpdateAggregator(_inputs[i], _outputs[i], _aggregators[i]);
     }
   }
 
