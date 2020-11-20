@@ -72,56 +72,27 @@ contract ConversionPath is WhitelistAdminRole {
   * @param _path List of addresses representing the currencies for the conversions
   * @return result the result after all the conversions
   */
-  function getConversion(
+  function getOneConversion(
     uint256 _amountIn,
     address[] calldata _path
   ) 
     external
     view
-    returns (uint256 result)
+    returns (uint256 result, uint256 oldestTimestampRate)
   {
+    // initialize the result
     result = _amountIn;
     
     // For every conversions of the path
     for (uint i; i < _path.length - 1; i++) {
-        // Get the input and output addresses representing the currencies
-        (address input, address output) = (_path[i], _path[i + 1]);
+        (AggregatorFraction aggregator, bool reverseAggregator, uint256 decimalsInput, uint256 decimalsOutput) = getAggregatorAndDecimals(_path[i], _path[i + 1]); 
         
-        // Try to get the right aggregator for the conversion
-        AggregatorFraction aggregator = AggregatorFraction(allAggregators[input][output]);
-        bool reverseAggregator = false;
-
-        // if no aggregator found we try to find an aggregator in the reverse way
-        if(address(aggregator) == address(0x00)) {
-          aggregator = AggregatorFraction(allAggregators[output][input]);
-          reverseAggregator = true;
+        // store the lastest timestamp of the path
+        uint256 currentTimestamp = aggregator.latestTimestamp();
+        if(currentTimestamp < oldestTimestampRate) {
+          oldestTimestampRate = currentTimestamp;
         }
 
-        require(address(aggregator) != address(0x00), "No aggregator found");
-
-        // by default we assume it is FIAT so 8 decimals
-        uint256 decimalsInput = 8;
-        // if address is 0, then it's ETH
-        if(input == address(0x0)) {
-          decimalsInput = 18;
-        } else if(isContract(input)) {
-          // otherwise, we get the decimals from the erc20 directly
-          decimalsInput = ERC20fraction(input).decimals();
-        }
-       
-        // by default we assume it is FIAT so 8 decimals
-        uint256 decimalsOutput = 8;
-        // if address is 0, then it's ETH
-        if(output == address(0x0)) {
-          decimalsOutput = 18;
-        } else if(isContract(output)) {
-          // otherwise, we get the decimals from the erc20 directly
-          decimalsOutput = ERC20fraction(output).decimals();
-        }
-         
-        // Check rate timestamp
-        require(now.sub(aggregator.latestTimestamp()) <= maxTimestampDeltaAcceptable, "aggregator rate is outdated");
-        
         // get the rate
         uint256 rate = uint256(aggregator.latestAnswer());
         // get the number of decimal of the rate
@@ -150,6 +121,113 @@ contract ConversionPath is WhitelistAdminRole {
           result = result.div(10**(decimalsAggregator-decimalsOutput));
         }
     }
+  }
+
+
+  /**
+  * @notice Computes the conversion from an amount through a list of conversion
+  * @param _amountIns list of Amount to convert
+  * @param _path List of addresses representing the currencies for the conversions
+  * @return results the result after all the conversions
+  */
+  function getConversions(
+    uint256[] calldata _amountIns,
+    address[] calldata _path
+  ) 
+    external
+    view
+    returns (uint256[] memory results, uint256 oldestTimestampRate)
+  {
+    // initialize the results
+    results = new uint256[](_amountIns.length);
+    for (uint j; j < _amountIns.length; j++) {
+      results[j] = _amountIns[j];
+    }
+    
+    // For every conversions of the path
+    for (uint i; i < _path.length - 1; i++) {
+        (AggregatorFraction aggregator, bool reverseAggregator, uint256 decimalsInput, uint256 decimalsOutput) = getAggregatorAndDecimals(_path[i], _path[i + 1]); 
+         
+        // store the lastest timestamp of the path
+        uint256 currentTimestamp = aggregator.latestTimestamp();
+        if(currentTimestamp < oldestTimestampRate) {
+          oldestTimestampRate = currentTimestamp;
+        }
+
+        // get the rate
+        uint256 rate = uint256(aggregator.latestAnswer());
+        // get the number of decimal of the rate
+        uint256 decimalsAggregator = uint256(aggregator.decimals());
+        
+        for (uint k; k < _amountIns.length; k++) {
+          // mul with the difference of decimals before the rate computation (for more precision)
+          if(decimalsAggregator > decimalsInput) {
+            results[k] = results[k].mul(10**(decimalsAggregator-decimalsInput));
+          }
+          if(decimalsAggregator < decimalsOutput) {
+            results[k] = results[k].mul(10**(decimalsOutput-decimalsAggregator));
+          }
+
+          // Apply the rate (if path use an aggregator in the reverse way, div instead of mul)
+          if(reverseAggregator) {
+            results[k] = results[k].mul(10**decimalsAggregator).div(rate);
+          } else {
+            results[k] = results[k].mul(rate).div(10**decimalsAggregator);
+          }
+
+          // div with the difference of decimals AFTER the rate computation (for more precision)
+          if(decimalsAggregator < decimalsInput) {
+            results[k] = results[k].div(10**(decimalsInput-decimalsAggregator));
+          }
+          if(decimalsAggregator > decimalsOutput) {
+            results[k] = results[k].div(10**(decimalsAggregator-decimalsOutput));
+          }
+        }
+    }
+  }
+
+  /**
+  * @notice Checks if an address is a contract
+  * @param _input input Address
+  * @param _output output Address
+  * @return aggregator and decimals
+  */
+  function getAggregatorAndDecimals(address _input, address _output)
+    private
+    view
+    returns (AggregatorFraction aggregator, bool reverseAggregator, uint256 decimalsInput, uint256 decimalsOutput)
+  {
+      // Try to get the right aggregator for the conversion
+      aggregator = AggregatorFraction(allAggregators[_input][_output]);
+      reverseAggregator = false;
+
+      // if no aggregator found we try to find an aggregator in the reverse way
+      if(address(aggregator) == address(0x00)) {
+        aggregator = AggregatorFraction(allAggregators[_output][_input]);
+        reverseAggregator = true;
+      }
+
+      require(address(aggregator) != address(0x00), "No aggregator found");
+
+      // by default we assume it is FIAT so 8 decimals
+      decimalsInput = 8;
+      // if address is 0, then it's ETH
+      if(_input == address(0x0)) {
+        decimalsInput = 18;
+      } else if(isContract(_input)) {
+        // otherwise, we get the decimals from the erc20 directly
+        decimalsInput = ERC20fraction(_input).decimals();
+      }
+      
+      // by default we assume it is FIAT so 8 decimals
+      decimalsOutput = 8;
+      // if address is 0, then it's ETH
+      if(_output == address(0x0)) {
+        decimalsOutput = 18;
+      } else if(isContract(_output)) {
+        // otherwise, we get the decimals from the erc20 directly
+        decimalsOutput = ERC20fraction(_output).decimals();
+      }
   }
 
   /**

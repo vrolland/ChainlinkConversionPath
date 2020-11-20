@@ -60,7 +60,7 @@ contract('ConversionPath', (accounts) => {
     }); 
   });
 
-  describe('getConversion', async () => {
+  describe('getOneConversion', async () => {
     beforeEach(async () => {
       conversionPathInstance = await ConversionPath.deployed();
       USDT_Instance = await USDT_fake.deployed();
@@ -69,52 +69,121 @@ contract('ConversionPath', (accounts) => {
 
     describe('only fiat conversion', async () => {
       it('can convert EUR to USD', async () => {
-        let conversion = await conversionPathInstance.getConversion.call("10000000000", [EUR_address, USD_address]);
-        assert.equal(conversion.toString(10), '11882200000', "wrong conversion");
+        const conversion = await conversionPathInstance.getOneConversion.call("10000000000", [EUR_address, USD_address]);
+        assert.equal(conversion.result.toString(10), '11882200000', "wrong conversion");
       });
 
       it('can convert USD to EUR', async () => {
-        conversion = await conversionPathInstance.getConversion.call("10000000000", [USD_address, EUR_address]);
-        assert.equal(conversion.toString(10), '8415949908', "wrong conversion");
+        const conversion = await conversionPathInstance.getOneConversion.call("10000000000", [USD_address, EUR_address]);
+        assert.equal(conversion.result.toString(10), '8415949908', "wrong conversion");
       });
 
       it('can convert USD to EUR to USD', async () => {
-        conversion = await conversionPathInstance.getConversion.call("10000000000", [USD_address, EUR_address, USD_address]);
-        assert.equal(conversion.toString(10), '9999999999', "wrong conversion");   
+        const conversion = await conversionPathInstance.getOneConversion.call("10000000000", [USD_address, EUR_address, USD_address]);
+        assert.equal(conversion.result.toString(10), '9999999999', "wrong conversion");   
       });   
     });
 
     describe('Ethereum conversion', async () => {
       it('can convert USD to ETH', async () => {
-        conversion = await conversionPathInstance.getConversion.call("10000000000", [USD_address, ETH_address]);
-        assert.equal(conversion.toString(10), '209280136491393323', "wrong conversion"); 
+        conversion = await conversionPathInstance.getOneConversion.call("10000000000", [USD_address, ETH_address]);
+        assert.equal(conversion.result.toString(10), '209280136491393323', "wrong conversion"); 
       });   
 
       it('can convert ETH to USD', async () => {
-        conversion = await conversionPathInstance.getConversion.call("209280136491393323", [ETH_address, USD_address]);
-        assert.equal(conversion.toString(10), '9999999999', "wrong conversion");  
+        conversion = await conversionPathInstance.getOneConversion.call("209280136491393323", [ETH_address, USD_address]);
+        assert.equal(conversion.result.toString(10), '9999999999', "wrong conversion");  
       });   
 
       it('can convert EUR to USD to ETH', async () => {
-        conversion = await conversionPathInstance.getConversion.call("10000000000", [EUR_address, USD_address, ETH_address]);
-        assert.equal(conversion.toString(10), '248670843781803374', "wrong conversion"); 
+        conversion = await conversionPathInstance.getOneConversion.call("10000000000", [EUR_address, USD_address, ETH_address]);
+        assert.equal(conversion.result.toString(10), '248670843781803374', "wrong conversion"); 
       });   
 
       it('can convert ETH to USD to EUR', async () => {
-        conversion = await conversionPathInstance.getConversion.call("248670843781803374", [ETH_address, USD_address, EUR_address]);
-        assert.equal(conversion.toString(10), '9999999999', "wrong conversion");
+        conversion = await conversionPathInstance.getOneConversion.call("248670843781803374", [ETH_address, USD_address, EUR_address]);
+        assert.equal(conversion.result.toString(10), '9999999999', "wrong conversion");
       });
     });
 
     describe('USDT conversion', async () => {
       it('can convert USD to ETH to USDT', async () => {
-        conversion = await conversionPathInstance.getConversion.call("10000000000", [USD_address, ETH_address, USDT_address]);
-        assert.equal(conversion.toString(10), '100146471', "wrong conversion");
+        const conversion = await conversionPathInstance.getOneConversion.call("10000000000", [USD_address, ETH_address, USDT_address]);
+        assert.equal(conversion.result.toString(10), '100146471', "wrong conversion");
       }); 
 
       it('can convert USDT to ETH to USD', async () => {
-        conversion = await conversionPathInstance.getConversion.call("100146471", [USDT_address, ETH_address, USD_address]);
-        assert.equal(conversion.toString(10), '9999999904', "wrong conversion");
+        const conversion = await conversionPathInstance.getOneConversion.call("100146471", [USDT_address, ETH_address, USD_address]);
+        assert.equal(conversion.result.toString(10), '9999999904', "wrong conversion");
+      }); 
+    }); 
+  });
+
+
+  describe('getConversions', async () => {
+    beforeEach(async () => {
+      conversionPathInstance = await ConversionPath.deployed();
+      USDT_Instance = await USDT_fake.deployed();
+      USDT_address = USDT_Instance.address;
+    });
+
+    describe('only fiat conversion', async () => {
+      it('can convert EUR to USD', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [EUR_address, USD_address]);
+        assert.equal(conversion.results[0].toString(10), '11882200000', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '23764400000', "wrong conversion");
+      });
+
+      it('can convert USD to EUR', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [USD_address, EUR_address]);
+        assert.equal(conversion.results[0].toString(10), '8415949908', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '16831899816', "wrong conversion");
+      });
+
+      it('can convert USD to EUR to USD', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [USD_address, EUR_address, USD_address]);
+        assert.equal(conversion.results[0].toString(10), '9999999999', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '19999999999', "wrong conversion");
+      });   
+    });
+
+    describe('Ethereum conversion', async () => {
+      it('can convert USD to ETH', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [USD_address, ETH_address]);
+        assert.equal(conversion.results[0].toString(10), '209280136491393323', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '418560272982786647', "wrong conversion");
+      });   
+
+      it('can convert ETH to USD', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["209280136491393323", '418560272982786647'], [ETH_address, USD_address]);
+        assert.equal(conversion.results[0].toString(10), '9999999999', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '19999999999', "wrong conversion");
+      });   
+
+      it('can convert EUR to USD to ETH', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [EUR_address, USD_address, ETH_address]);
+        assert.equal(conversion.results[0].toString(10), '248670843781803374', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '497341687563606749', "wrong conversion");
+      });   
+
+      it('can convert ETH to USD to EUR', async () => {
+          const conversion = await conversionPathInstance.getConversions.call(["248670843781803374", "497341687563606749"], [ETH_address, USD_address, EUR_address]);
+          assert.equal(conversion.results[0].toString(10), '9999999999', "wrong conversion");
+          assert.equal(conversion.results[1].toString(10), '19999999999', "wrong conversion");
+      });
+    });
+
+    describe('USDT conversion', async () => {
+      it('can convert USD to ETH to USDT', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["10000000000", "20000000000"], [USD_address, ETH_address, USDT_address]);
+        assert.equal(conversion.results[0].toString(10), '100146471', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '200292943', "wrong conversion");
+      }); 
+
+      it('can convert USDT to ETH to USD', async () => {
+        const conversion = await conversionPathInstance.getConversions.call(["100146471", "200292942"], [USDT_address, ETH_address, USD_address]);
+        assert.equal(conversion.results[0].toString(10), '9999999904', "wrong conversion");
+        assert.equal(conversion.results[1].toString(10), '19999999809', "wrong conversion");
       }); 
     }); 
   });
