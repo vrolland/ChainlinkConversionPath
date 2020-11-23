@@ -15,11 +15,11 @@ interface AggregatorFraction {
 }
 
 /**
- * @title ConversionPath
+ * @title ChainlinkConversionPath
  *
- * @notice ConversionPath is a contract allowing to compute conversion from a path of Chainlink
+ * @notice ChainlinkConversionPath is a contract allowing to compute conversion from a path of Chainlink
  */
-contract ConversionPath is WhitelistAdminRole {
+contract ChainlinkConversionPath is WhitelistAdminRole {
   using SafeMath for uint256;
     
   // Mapping of Chainlink aggrefators (input currency => output currency => contract address)

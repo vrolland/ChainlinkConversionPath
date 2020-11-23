@@ -5,7 +5,7 @@ const AggUSDT_ETH = artifacts.require("Agg_USDT_ETH");
 
 const USDT_fake = artifacts.require("USDT_fake");
 
-const ConversionPath = artifacts.require("ConversionPath");
+const ChainlinkConversionPath = artifacts.require("ChainlinkConversionPath");
 
 module.exports = async function(deployer) {
   await deployer.deploy(AggDAI_USD);
@@ -20,7 +20,7 @@ module.exports = async function(deployer) {
   const DAI_address = "0x0000000000000000000000000000000000000003";
   const USDT_address = USDT_fake.address;
 
-  const conversionPathInstance = await deployer.deploy(ConversionPath);
+  const conversionPathInstance = await deployer.deploy(ChainlinkConversionPath);
 
   await conversionPathInstance.updateListAggregators( [DAI_address,         EUR_address,        ETH_address,        USDT_address], 
                                                       [USD_address,         USD_address,        USD_address,        ETH_address], 

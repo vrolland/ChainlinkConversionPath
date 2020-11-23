@@ -1,4 +1,4 @@
-const ConversionPath = artifacts.require("ConversionPath");
+const ChainlinkConversionPath = artifacts.require("ChainlinkConversionPath");
 
 const USDT_fake = artifacts.require("USDT_fake");
 
@@ -20,10 +20,10 @@ let USDT_address;
 let conversionPathInstance;
 let USDT_Instance;
 
-contract('ConversionPath', (accounts) => {
+contract('ChainlinkConversionPath', (accounts) => {
   describe('updateAggregator', async () => {
     beforeEach(async () => {
-      conversionPathInstance = await ConversionPath.new();
+      conversionPathInstance = await ChainlinkConversionPath.new();
     });
 
     it('can updateAggregator', async () => {
@@ -39,7 +39,7 @@ contract('ConversionPath', (accounts) => {
   
   describe('updateListAggregators', async () => {
     beforeEach(async () => {
-      conversionPathInstance = await ConversionPath.new();
+      conversionPathInstance = await ChainlinkConversionPath.new();
     });
     
     it('can updateListAggregators', async () => {
@@ -62,7 +62,7 @@ contract('ConversionPath', (accounts) => {
 
   describe('getOneConversion', async () => {
     beforeEach(async () => {
-      conversionPathInstance = await ConversionPath.deployed();
+      conversionPathInstance = await ChainlinkConversionPath.deployed();
       USDT_Instance = await USDT_fake.deployed();
       USDT_address = USDT_Instance.address;
     });
@@ -119,10 +119,9 @@ contract('ConversionPath', (accounts) => {
     }); 
   });
 
-
   describe('getConversions', async () => {
     beforeEach(async () => {
-      conversionPathInstance = await ConversionPath.deployed();
+      conversionPathInstance = await ChainlinkConversionPath.deployed();
       USDT_Instance = await USDT_fake.deployed();
       USDT_address = USDT_Instance.address;
     });
